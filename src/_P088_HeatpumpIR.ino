@@ -71,6 +71,7 @@ HeatpumpIR *heatpumpIR[] = {new PanasonicCKPHeatpumpIR(), new PanasonicDKEHeatpu
                             new CarrierNQVHeatpumpIR(), new CarrierMCAHeatpumpIR(),
                             new MideaHeatpumpIR(), new FujitsuHeatpumpIR(),
                             new MitsubishiFDHeatpumpIR(), new MitsubishiFEHeatpumpIR(), new MitsubishiMSYHeatpumpIR(), new MitsubishiFAHeatpumpIR(),
+							new MitsubishiKJHeatpumpIR(),
                             new SamsungAQVHeatpumpIR(), new SamsungFJMHeatpumpIR(),new SharpHeatpumpIR(), new DaikinHeatpumpIR(),
                             new MitsubishiHeavyZJHeatpumpIR(), new MitsubishiHeavyZMHeatpumpIR(),
                             new MitsubishiSEZKDXXHeatpumpIR(),
@@ -184,25 +185,23 @@ boolean Plugin_088(byte function, struct EventStruct *event, String& string)
         unsigned int temperature = 22;
         unsigned int vDir = VDIR_UP;
         unsigned int hDir = HDIR_AUTO;
-        char command[80];
-        command[0] = 0;
-        String TmpStr1 = "";
-        string.toCharArray(command, 80);
 
-        String tmpString = string;
-        int argIndex = tmpString.indexOf(',');
-        if (argIndex) tmpString = tmpString.substring(0, argIndex);
-
-        if (tmpString.equalsIgnoreCase(F("HEATPUMPIR")) && Plugin_088_irSender != NULL)
+        String cmd = parseString(string, 1);
+        if (cmd.equalsIgnoreCase(F("HEATPUMPIR")) && Plugin_088_irSender != NULL)
         {
-          if (GetArgv(command, TmpStr1, 2)) heatpumpModel = TmpStr1;
-          if (GetArgv(command, TmpStr1, 3)) powerMode = str2int(TmpStr1.c_str());
-          if (GetArgv(command, TmpStr1, 4)) operatingMode = str2int(TmpStr1.c_str());
-          if (GetArgv(command, TmpStr1, 5)) fanSpeed = str2int(TmpStr1.c_str());
-          if (GetArgv(command, TmpStr1, 6)) temperature = str2int(TmpStr1.c_str());
-          if (GetArgv(command, TmpStr1, 7)) vDir = str2int(TmpStr1.c_str());
-          if (GetArgv(command, TmpStr1, 8)) hDir = str2int(TmpStr1.c_str());
-
+          String TmpStr1;
+          if (GetArgv(string.c_str(), TmpStr1, 2)) heatpumpModel = TmpStr1;
+          if (GetArgv(string.c_str(), TmpStr1, 3)) powerMode = str2int(TmpStr1.c_str());
+          if (GetArgv(string.c_str(), TmpStr1, 4)) operatingMode = str2int(TmpStr1.c_str());
+          if (GetArgv(string.c_str(), TmpStr1, 5)) fanSpeed = str2int(TmpStr1.c_str());
+          if (GetArgv(string.c_str(), TmpStr1, 6)) temperature = str2int(TmpStr1.c_str());
+          if (GetArgv(string.c_str(), TmpStr1, 7)) vDir = str2int(TmpStr1.c_str());
+          if (GetArgv(string.c_str(), TmpStr1, 8)) hDir = str2int(TmpStr1.c_str());
+#ifdef IR_SEND_TIME
+          sendHour = hour();
+          sendMinute = minute();
+          sendWeekday = weekday();
+#endif
           int i = 0;
           do
           {
@@ -210,19 +209,21 @@ boolean Plugin_088(byte function, struct EventStruct *event, String& string)
 
             if (strcmp_P(heatpumpModel.c_str(), shortName) == 0)
             {
-              #ifdef PLUGIN_016
-              if (irReceiver != 0)
-              irReceiver->disableIRIn(); // Stop the receiver
-              #endif
+              enableIR_RX(false);
               heatpumpIR[i]->send(*Plugin_088_irSender, powerMode, operatingMode, fanSpeed, temperature, vDir, hDir);
-              #ifdef PLUGIN_016
-              if (irReceiver != 0)
-              irReceiver->enableIRIn(); // Start the receiver
-              #endif
+              enableIR_RX(true);
               addLog(LOG_LEVEL_INFO, F("P088: Heatpump IR code transmitted"));
+#ifdef IR_DEBUG_PACKET
+              addLog(LOG_LEVEL_DEBUG, IRPacket);
+#endif
               if (printToWeb)
               {
                 printWebString += F("P088: Heatpump IR code transmitted");
+#ifdef IR_DEBUG_PACKET
+                printWebString += F(" <BR>\n"); // do both <BR> and \n to break line both in browser and curl -s
+                printWebString += IRPacket;
+                printWebString += F("\n"); 
+#endif
               }
 
               // Panasonic CKP can only be turned ON/OFF by using the timer,
@@ -262,15 +263,9 @@ boolean Plugin_088(byte function, struct EventStruct *event, String& string)
           {
             PanasonicCKPHeatpumpIR *panasonicHeatpumpIR = new PanasonicCKPHeatpumpIR();
 
-            #ifdef PLUGIN_016
-            if (irReceiver != 0)
-            irReceiver->disableIRIn(); // Stop the receiver
-            #endif
+            enableIR_RX(false);
             panasonicHeatpumpIR->sendPanasonicCKPCancelTimer(*Plugin_088_irSender);
-             #ifdef PLUGIN_016
-            if (irReceiver != 0)
-            irReceiver->enableIRIn(); // Start the receiver
-            #endif
+            enableIR_RX(true);
             addLog(LOG_LEVEL_INFO, F("P088: The TIMER led on Panasonic CKP should now be OFF"));
           }
         }
@@ -287,5 +282,4 @@ boolean Plugin_088(byte function, struct EventStruct *event, String& string)
 
   return success;
 }
-
 #endif // USES_P088

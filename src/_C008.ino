@@ -67,10 +67,9 @@ bool CPlugin_008(byte function, struct EventStruct *event, String& string)
           if (isvalid) {
             element.txt[x] = "/";
             element.txt[x] += ControllerSettings.Publish;
-            parseControllerVariables(element.txt[x], event, true);
-
-            element.txt[x].replace(F("%valname%"), URLEncode(ExtraTaskSettings.TaskDeviceValueNames[x]));
+            element.txt[x].replace(F("%valname%"), ExtraTaskSettings.TaskDeviceValueNames[x]);
             element.txt[x].replace(F("%value%"), formattedValue);
+            parseControllerVariables(element.txt[x], event, true);
 #ifndef BUILD_NO_DEBUG
             addLog(LOG_LEVEL_DEBUG_MORE, element.txt[x]);
 #endif
@@ -95,6 +94,8 @@ bool CPlugin_008(byte function, struct EventStruct *event, String& string)
 //********************************************************************************
 // Generic HTTP get request
 //********************************************************************************
+bool do_process_c008_delay_queue(int controller_number, const C008_queue_element& element, ControllerSettingsStruct& ControllerSettings);
+
 bool do_process_c008_delay_queue(int controller_number, const C008_queue_element& element, ControllerSettingsStruct& ControllerSettings) {
   while (element.txt[element.valuesSent] == "") {
     // A non valid value, which we are not going to send.

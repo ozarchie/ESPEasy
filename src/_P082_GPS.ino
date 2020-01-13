@@ -12,6 +12,7 @@
 
 #include <ESPeasySerial.h>
 #include <TinyGPS++.h>
+#include "ESPEasy_packed_raw_data.h"
 
 #define PLUGIN_082
 #define PLUGIN_ID_082          82
@@ -445,7 +446,7 @@ boolean Plugin_082(byte function, struct EventStruct *event, String& string) {
         if (activeFix != curFixStatus) {
           // Fix status changed, send events.
           String event = curFixStatus ? F("GPS#GotFix") : F("GPS#LostFix");
-          rulesProcessing(event);
+          eventQueue.add(event);
           activeFix = curFixStatus;
         }
         double distance = 0.0;

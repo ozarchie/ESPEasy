@@ -52,7 +52,7 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_SAVE:
       {
-        pconfig_webformSave(event, 0);
+        sensorTypeHelper_saveSensorType(event, 0);
         success = true;
         break;
       }
@@ -110,7 +110,7 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
                 log += F(" value ");
                 log += event->Par2;
                 log += F(" parameter3: ");
-                log += parseString(string, 4);
+                log += parseStringKeepCase(string, 4);
                 log += F(" not a float value!");
                 addLog(LOG_LEVEL_ERROR,log);
               }
